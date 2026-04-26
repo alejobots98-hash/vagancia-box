@@ -8,7 +8,6 @@ const {
   ButtonStyle,
   PermissionsBitField,
   ChannelType,
-  AttachmentBuilder
 } = require("discord.js");
 
 const discordTranscripts = require("discord-html-transcripts");
@@ -27,6 +26,9 @@ const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
 const EXTRA_MOD_ROLE_ID = "1211760228673257524"; 
 const LOG_CHANNEL_ID = "1486176116413825206";
+
+// ENLACE DIRECTO QUE ME PASASTE
+const LOGO_BOXEO_URL = "https://i.postimg.cc/CLD10GMF/logo.png"; 
 
 const estadosFilas = new Map();
 
@@ -68,7 +70,7 @@ function embedPagos() {
     )
     .setFooter({ 
       text: "VAGANCIA • Boxeo por el Honor",
-      iconURL: "attachment://logo.png" 
+      iconURL: LOGO_BOXEO_URL 
     });
 }
 
@@ -81,7 +83,7 @@ function crearEmbedFila(data = { f1: null, f2: null, f3: null }) {
   return new EmbedBuilder()
     .setColor(0x1e1b4b) 
     .setTitle(`${EMOJI_GUANTE} | ¿QUIÉN SE PLANTA?`)
-    .setThumbnail("attachment://logo.png")
+    .setThumbnail(LOGO_BOXEO_URL) // LA FOTO EN LA ESQUINA
     .setDescription(
 `**Formato:** Apostado ${EMOJI_DINERO}
 **Valor:** A coordinar
@@ -114,12 +116,9 @@ client.on("messageCreate", async (message) => {
 
   if (!esAdmin && !tieneRol) return message.reply("❌ No tenés permiso para armar el ring.");
 
-  const fotoGato = new AttachmentBuilder('./logo.png', { name: 'logo.png' });
-
   const msg = await message.channel.send({
     embeds: [crearEmbedFila()],
     components: [botonesTripleFila()],
-    files: [fotoGato]
   });
 
   estadosFilas.set(msg.id, { f1: null, f2: null, f3: null });
@@ -129,7 +128,7 @@ client.on("messageCreate", async (message) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
-  // LÓGICA CERRAR PARTIDA
+  // CERRAR PELEA
   if (interaction.customId === "cerrar_partida") {
     const puedeCerrar = interaction.member.roles.cache.has(STAFF_ROLE_ID) || 
                         interaction.member.roles.cache.has(EXTRA_MOD_ROLE_ID) ||
@@ -138,7 +137,7 @@ client.on("interactionCreate", async (interaction) => {
     if (!puedeCerrar) return interaction.reply({ content: "❌ Solo el Staff puede terminar el combate.", ephemeral: true });
     
     const canalDestino = interaction.channel;
-    await interaction.reply({ content: "⏳ Guardando reporte de la pelea...", ephemeral: true });
+    await interaction.reply({ content: "⏳ Guardando reporte...", ephemeral: true });
     
     try {
       const attachment = await discordTranscripts.createTranscript(canalDestino, {
@@ -151,7 +150,7 @@ client.on("interactionCreate", async (interaction) => {
           files: [attachment],
         });
       }
-    } catch (e) { console.error("Error transcript:", e); }
+    } catch (e) { console.error(e); }
 
     setTimeout(async () => {
       try { if (canalDestino?.deletable) await canalDestino.delete(); } catch (err) {}
@@ -164,13 +163,12 @@ client.on("interactionCreate", async (interaction) => {
   if (!data) return interaction.reply({ content: "❌ Error: Ring no encontrado.", ephemeral: true });
 
   const userId = interaction.user.id;
-  const fotoGato = new AttachmentBuilder('./logo.png', { name: 'logo.png' });
 
   if (interaction.customId === "salir_fila") {
     if (data.f1 === userId) data.f1 = null;
     if (data.f2 === userId) data.f2 = null;
     if (data.f3 === userId) data.f3 = null;
-    return await interaction.update({ embeds: [crearEmbedFila(data)], files: [fotoGato] });
+    return await interaction.update({ embeds: [crearEmbedFila(data)] });
   }
 
   const mapping = { "btn_f1": "f1", "btn_f2": "f2", "btn_f3": "f3" };
@@ -183,14 +181,14 @@ client.on("interactionCreate", async (interaction) => {
 
   if (!data[filaKey]) {
     data[filaKey] = userId;
-    await interaction.update({ embeds: [crearEmbedFila(data)], files: [fotoGato] });
+    await interaction.update({ embeds: [crearEmbedFila(data)] });
   } else {
     if (data[filaKey] === userId) return interaction.reply({ content: "⚠️ Ya estás aquí.", ephemeral: true });
     
     const rivalId = data[filaKey];
     data[filaKey] = null; 
 
-    await interaction.update({ embeds: [crearEmbedFila(data)], files: [fotoGato] });
+    await interaction.update({ embeds: [crearEmbedFila(data)] });
     await crearCanalPrivado(interaction, [rivalId, userId]);
   }
 });
@@ -199,7 +197,6 @@ client.on("interactionCreate", async (interaction) => {
 async function crearCanalPrivado(interaction, jugadores) {
   const guild = interaction.guild;
   const parent = interaction.channel.parent;
-  const fotoGato = new AttachmentBuilder('./logo.png', { name: 'logo.png' });
 
   const nombres = jugadores
     .map((id) => guild.members.cache.get(id)?.user.username || "peleador")
@@ -220,7 +217,7 @@ async function crearCanalPrivado(interaction, jugadores) {
   const embedMatch = new EmbedBuilder()
     .setColor(0xff0000)
     .setTitle("¡PARENSE DE MANOS!")
-    .setThumbnail("attachment://logo.png")
+    .setThumbnail(LOGO_BOXEO_URL)
     .setDescription(
       `🔔 **EL COMBATE COMIENZA**\n\n` +
       `🔵 **Esquina Azul:** <@${jugadores[0]}>\n` +
@@ -233,7 +230,6 @@ async function crearCanalPrivado(interaction, jugadores) {
   await canal.send({ 
     content: `${jugadores.map(id => `<@${id}>`).join(" ")} | <@&${STAFF_ROLE_ID}>`, 
     embeds: [embedMatch], 
-    files: [fotoGato],
     components: [
         new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("cerrar_partida").setLabel("FINALIZAR PELEA").setEmoji("🛑").setStyle(ButtonStyle.Danger)
@@ -241,8 +237,8 @@ async function crearCanalPrivado(interaction, jugadores) {
     ]
   });
 
-  await canal.send({ embeds: [embedPagos()], files: [fotoGato] });
+  await canal.send({ embeds: [embedPagos()] });
 }
 
-client.once("ready", () => console.log(`✅ Bot Boxeador cargando logo local. Comando: !box`));
+client.once("ready", () => console.log(`✅ Bot Boxeador Online. Comando: !box`));
 client.login(process.env.TOKEN);
