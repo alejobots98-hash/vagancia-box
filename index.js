@@ -21,13 +21,14 @@ const client = new Client({
 });
 
 // ===================== CONFIGURACIÓN =====================
-const PREFIX = "!box"; // <--- CAMBIADO A !box
+const PREFIX = "!box"; 
 const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
 const EXTRA_MOD_ROLE_ID = "1211760228673257524"; 
 const LOG_CHANNEL_ID = "1486176116413825206";
 
-const LOGO_BOXEO_URL = "https://i.imgur.com/vHq1vHj.png"; 
+// ENLACE DIRECTO ACTUALIZADO
+const LOGO_BOXEO_URL = "https://i.postimg.cc/5NkH94Ls/Gemini-Generated-Image-ly7qb6ly7qb6ly7q-removebg-preview.png"; 
 
 const estadosFilas = new Map();
 
