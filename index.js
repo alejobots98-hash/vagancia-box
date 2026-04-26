@@ -21,14 +21,13 @@ const client = new Client({
 });
 
 // ===================== CONFIGURACIÓN =====================
-const PREFIX = "!fila";
+const PREFIX = "!box"; // <--- CAMBIADO A !box
 const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
 const EXTRA_MOD_ROLE_ID = "1211760228673257524"; 
 const LOG_CHANNEL_ID = "1486176116413825206";
 
-// URL de la imagen del Gato Boxeador que proporcionaste
-const LOGO_BOXEO_URL = "https://i.imgur.com/vHq1vHj.png"; // Asegúrate de subir la imagen del gato a un host como Imgur para que el link sea permanente
+const LOGO_BOXEO_URL = "https://i.imgur.com/vHq1vHj.png"; 
 
 const estadosFilas = new Map();
 
@@ -36,12 +35,11 @@ const estadosFilas = new Map();
 const EMOJI_GUANTE = "🥊";
 const EMOJI_RING = "🏟️";
 const EMOJI_DINERO = "💸";
-const EMOJI_CAMPANA = "🔔";
 
 // ===================== EMBED PAGOS =====================
 function embedPagos() {
   return new EmbedBuilder()
-    .setColor(0x7c3aed) // Violeta característico de La Vagancia
+    .setColor(0x7c3aed) 
     .setTitle("🥊 MÉTODOS DE PAGO & REGLAS DEL RING")
     .setDescription(
 `━━━━━━━━━━━━━━━━━━
@@ -89,7 +87,7 @@ function crearEmbedFila(data = { f1: null, f2: null, f3: null }) {
   const p3 = data.f3 ? `<@${data.f3}>` : "*Esperando rival...*";
 
   return new EmbedBuilder()
-    .setColor(0x1e1b4b) // Color premium oscuro
+    .setColor(0x1e1b4b) 
     .setTitle(`${EMOJI_GUANTE} | ¿QUIÉN SE PLANTA?`)
     .setDescription(
 `**Formato:** Apostado ${EMOJI_DINERO}
@@ -100,7 +98,7 @@ ${EMOJI_RING} **Esquina 1:** ${p1}
 ${EMOJI_RING} **Esquina 2:** ${p2}
 ${EMOJI_RING} **Esquina 3:** ${p3}`
     )
-    .setThumbnail(LOGO_BOXEO_URL) // Aquí va el logo del gato boxeador
+    .setThumbnail(LOGO_BOXEO_URL) 
     .setFooter({ text: "VAGANCIA • CAMPEONATO DE BOXEO" });
 }
 
@@ -256,5 +254,5 @@ async function crearCanalPrivado(interaction, jugadores) {
   await canal.send({ embeds: [embedPagos()] });
 }
 
-client.once("ready", () => console.log(`✅ Bot Boxeador conectado como ${client.user.tag}`));
+client.once("ready", () => console.log(`✅ Bot Boxeador conectado con comando !box`));
 client.login(process.env.TOKEN);
