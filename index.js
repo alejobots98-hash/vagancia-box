@@ -8,6 +8,7 @@ const {
   ButtonStyle,
   PermissionsBitField,
   ChannelType,
+  AttachmentBuilder
 } = require("discord.js");
 
 const discordTranscripts = require("discord-html-transcripts");
@@ -26,9 +27,6 @@ const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
 const EXTRA_MOD_ROLE_ID = "1211760228673257524"; 
 const LOG_CHANNEL_ID = "1486176116413825206";
-
-// ENLACE DIRECTO ACTUALIZADO
-const LOGO_BOXEO_URL = "https://i.postimg.cc/5NkH94Ls/Gemini-Generated-Image-ly7qb6ly7qb6ly7q-removebg-preview.png"; 
 
 const estadosFilas = new Map();
 
@@ -51,7 +49,7 @@ function embedPagos() {
 ┗ 🔗 Alias: \`vg.apos\`
 
 🌐 **AstroPay**
-┗ 🔗 [Clic aquí para pagar](https://onetouch.astropay.com/payment?external_reference_id=8lIV0oqyplqnZulPqVirFZbTf2rkhLsR)
+┗ 🔗 [Clic aquí para pagar](https://onetouch.astropay.com)
 
 💎 **Binance**
 ┗ 🆔 ID: \`729592524\`
@@ -64,20 +62,13 @@ function embedPagos() {
 ⚠️ Fuera de Discord → **10% del monto**
 
 ━━━━━━━━━━━━━━━━━━
-**EVENTO WINS**
-
-🔥 Apuestas mayores a **3.000 ARS** participan
-🎖️ Requiere insignia **VG**
-🎤 Obligatorio estar en voice
-
-━━━━━━━━━━━━━━━━━━
 **VAGANCIA BOXING SYSTEM**
 ⚔️ Sistema de combate automático
 🛡️ **LA VAGANCIA • Org Oficial**`
     )
     .setFooter({ 
       text: "VAGANCIA • Boxeo por el Honor",
-      iconURL: LOGO_BOXEO_URL 
+      iconURL: "attachment://logo.png" 
     });
 }
 
@@ -90,6 +81,7 @@ function crearEmbedFila(data = { f1: null, f2: null, f3: null }) {
   return new EmbedBuilder()
     .setColor(0x1e1b4b) 
     .setTitle(`${EMOJI_GUANTE} | ¿QUIÉN SE PLANTA?`)
+    .setThumbnail("attachment://logo.png")
     .setDescription(
 `**Formato:** Apostado ${EMOJI_DINERO}
 **Valor:** A coordinar
@@ -97,10 +89,10 @@ function crearEmbedFila(data = { f1: null, f2: null, f3: null }) {
 **Cartelera de hoy:**
 ${EMOJI_RING} **Esquina 1:** ${p1}
 ${EMOJI_RING} **Esquina 2:** ${p2}
-${EMOJI_RING} **Esquina 3:** ${p3}`
-    )
-    .setThumbnail(LOGO_BOXEO_URL) 
-    .setFooter({ text: "VAGANCIA • CAMPEONATO DE BOXEO" });
+${EMOJI_RING} **Esquina 3:** ${p3}
+
+**VAGANCIA • CAMPEONATO DE BOXEO**`
+    );
 }
 
 // ===================== BOTONES =====================
@@ -122,9 +114,12 @@ client.on("messageCreate", async (message) => {
 
   if (!esAdmin && !tieneRol) return message.reply("❌ No tenés permiso para armar el ring.");
 
+  const fotoGato = new AttachmentBuilder('./logo.png', { name: 'logo.png' });
+
   const msg = await message.channel.send({
     embeds: [crearEmbedFila()],
     components: [botonesTripleFila()],
+    files: [fotoGato]
   });
 
   estadosFilas.set(msg.id, { f1: null, f2: null, f3: null });
@@ -134,17 +129,16 @@ client.on("messageCreate", async (message) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
+  // LÓGICA CERRAR PARTIDA
   if (interaction.customId === "cerrar_partida") {
     const puedeCerrar = interaction.member.roles.cache.has(STAFF_ROLE_ID) || 
                         interaction.member.roles.cache.has(EXTRA_MOD_ROLE_ID) ||
                         interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
 
-    if (!puedeCerrar) {
-      return interaction.reply({ content: "❌ Solo el árbitro (Staff) puede terminar el combate.", ephemeral: true });
-    }
+    if (!puedeCerrar) return interaction.reply({ content: "❌ Solo el Staff puede terminar el combate.", ephemeral: true });
     
     const canalDestino = interaction.channel;
-    await interaction.reply({ content: "⏳ Guardando el reporte de la pelea...", ephemeral: true });
+    await interaction.reply({ content: "⏳ Guardando reporte de la pelea...", ephemeral: true });
     
     try {
       const attachment = await discordTranscripts.createTranscript(canalDestino, {
@@ -157,30 +151,26 @@ client.on("interactionCreate", async (interaction) => {
           files: [attachment],
         });
       }
-    } catch (e) { console.error("Error al generar transcript:", e); }
+    } catch (e) { console.error("Error transcript:", e); }
 
     setTimeout(async () => {
-      try {
-        if (canalDestino && canalDestino.deletable) {
-          await canalDestino.delete();
-        }
-      } catch (err) {
-        console.log("El canal ya fue borrado.");
-      }
+      try { if (canalDestino?.deletable) await canalDestino.delete(); } catch (err) {}
     }, 2000);
     return;
   }
 
+  // LÓGICA DE FILAS
   const data = estadosFilas.get(interaction.message.id);
   if (!data) return interaction.reply({ content: "❌ Error: Ring no encontrado.", ephemeral: true });
 
   const userId = interaction.user.id;
+  const fotoGato = new AttachmentBuilder('./logo.png', { name: 'logo.png' });
 
   if (interaction.customId === "salir_fila") {
     if (data.f1 === userId) data.f1 = null;
     if (data.f2 === userId) data.f2 = null;
     if (data.f3 === userId) data.f3 = null;
-    return await interaction.update({ embeds: [crearEmbedFila(data)] });
+    return await interaction.update({ embeds: [crearEmbedFila(data)], files: [fotoGato] });
   }
 
   const mapping = { "btn_f1": "f1", "btn_f2": "f2", "btn_f3": "f3" };
@@ -188,21 +178,19 @@ client.on("interactionCreate", async (interaction) => {
   if (!filaKey) return;
 
   if (data.f1 === userId || data.f2 === userId || data.f3 === userId) {
-    if (data[filaKey] !== userId) {
-        return interaction.reply({ content: "⚠️ Ya estás anotado en otra fila.", ephemeral: true });
-    }
+    if (data[filaKey] !== userId) return interaction.reply({ content: "⚠️ Ya estás en una esquina.", ephemeral: true });
   }
 
   if (!data[filaKey]) {
     data[filaKey] = userId;
-    await interaction.update({ embeds: [crearEmbedFila(data)] });
+    await interaction.update({ embeds: [crearEmbedFila(data)], files: [fotoGato] });
   } else {
-    if (data[filaKey] === userId) return interaction.reply({ content: "⚠️ Ya estás en esta esquina.", ephemeral: true });
+    if (data[filaKey] === userId) return interaction.reply({ content: "⚠️ Ya estás aquí.", ephemeral: true });
     
     const rivalId = data[filaKey];
     data[filaKey] = null; 
 
-    await interaction.update({ embeds: [crearEmbedFila(data)] });
+    await interaction.update({ embeds: [crearEmbedFila(data)], files: [fotoGato] });
     await crearCanalPrivado(interaction, [rivalId, userId]);
   }
 });
@@ -211,11 +199,11 @@ client.on("interactionCreate", async (interaction) => {
 async function crearCanalPrivado(interaction, jugadores) {
   const guild = interaction.guild;
   const parent = interaction.channel.parent;
+  const fotoGato = new AttachmentBuilder('./logo.png', { name: 'logo.png' });
 
   const nombres = jugadores
     .map((id) => guild.members.cache.get(id)?.user.username || "peleador")
-    .join("-vs-")
-    .toLowerCase().replace(/[^a-z0-9\-]/g, "").slice(0, 80);
+    .join("-vs-").toLowerCase().replace(/[^a-z0-9\-]/g, "").slice(0, 80);
 
   const canal = await guild.channels.create({
     name: `🥊┃${nombres}`,
@@ -232,19 +220,20 @@ async function crearCanalPrivado(interaction, jugadores) {
   const embedMatch = new EmbedBuilder()
     .setColor(0xff0000)
     .setTitle("¡PARENSE DE MANOS!")
-    .setThumbnail(LOGO_BOXEO_URL)
+    .setThumbnail("attachment://logo.png")
     .setDescription(
       `🔔 **EL COMBATE COMIENZA**\n\n` +
       `🔵 **Esquina Azul:** <@${jugadores[0]}>\n` +
       `🔴 **Esquina Roja:** <@${jugadores[1]}>\n\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
-      `📢 **¡A pelear!** Suban captura de los pagos y coordinen el duelo.\n` +
+      `📢 **¡A pelear!** Coordinen su duelo y suban captura de pagos.\n` +
       `━━━━━━━━━━━━━━━━━━`
     );
 
   await canal.send({ 
-    content: `${jugadores.map(id => `<@${id}>`).join(" ")} | ¡Suban al ring! <@&${STAFF_ROLE_ID}>`, 
+    content: `${jugadores.map(id => `<@${id}>`).join(" ")} | <@&${STAFF_ROLE_ID}>`, 
     embeds: [embedMatch], 
+    files: [fotoGato],
     components: [
         new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("cerrar_partida").setLabel("FINALIZAR PELEA").setEmoji("🛑").setStyle(ButtonStyle.Danger)
@@ -252,8 +241,8 @@ async function crearCanalPrivado(interaction, jugadores) {
     ]
   });
 
-  await canal.send({ embeds: [embedPagos()] });
+  await canal.send({ embeds: [embedPagos()], files: [fotoGato] });
 }
 
-client.once("ready", () => console.log(`✅ Bot Boxeador conectado con comando !box`));
+client.once("ready", () => console.log(`✅ Bot Boxeador cargando logo local. Comando: !box`));
 client.login(process.env.TOKEN);
